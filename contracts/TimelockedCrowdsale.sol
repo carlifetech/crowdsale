@@ -122,7 +122,7 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
   function _preValidatePurchase(
     address _beneficiary,
     uint256 _weiAmount
-  ) internal {
+  ) internal view {
     super._preValidatePurchase(_beneficiary, _weiAmount);
     uint256 _existingContribution = contributions[_beneficiary];
     uint256 _newContribution = _existingContribution.add(_weiAmount);
