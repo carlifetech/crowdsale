@@ -96,10 +96,8 @@ contract("TimelockedCrowdsale", accounts => {
     _revocability = [_revocable, _revocable, _revocable];
     _fundsAddress = [team, partners];
     _fundsLocksTime = [
-      _teamLockStart,
       _teamLockCliff,
       _teamLockDuration,
-      _partnersLockStart,
       _partnersLockCliff,
       _partnersLockDuration
     ];
@@ -136,7 +134,6 @@ contract("TimelockedCrowdsale", accounts => {
 
     [beneficiaryLocks] = await sender.getTokenLocksBeneficiarys();
     beneficiaryLock = await TokenVesting.at(beneficiaryLocks);
-
     beneficiaryAddress = await beneficiaryLock.beneficiary();
     beneficiaryLockStartTime = await sender.getUserLockStartTime(
       beneficiaryAddress
@@ -169,17 +166,21 @@ contract("TimelockedCrowdsale", accounts => {
 
     it("can be released after cliff", async () => {
       await time.increaseTo(
-        beneficiaryLockStartTime + _cliffDuration + time.duration.weeks(1)
+        beneficiaryLockStartTime.toNumber() +
+          _cliffDuration +
+          time.duration.weeks(1)
       );
       const { logs } = await beneficiaryLock.release(spt.address);
       expect(logs[0].args.amount).to.eq.BN(await spt.balanceOf(investor01));
     });
 
     it("should release proper amount after cliff", async () => {
-      await time.increaseTo(_start + _cliffDuration);
+      await time.increaseTo(
+        beneficiaryLockStartTime.toNumber() + _cliffDuration
+      );
 
-      const investorBalanceBefore = await spt.balanceOf(investor01);
-      /*console.log(
+      /*const investorBalanceBefore = await spt.balanceOf(investor01);
+      console.log(
         "Amount of spt on investor's account before release: %o",
         await web3.utils.fromWei(investorBalanceBefore, "ether")
       );*/
@@ -190,38 +191,26 @@ contract("TimelockedCrowdsale", accounts => {
         await web3.utils.fromWei(amountInLockBefore, "ether")
       );*/
 
-      const releasableSpt = await beneficiaryLock.releasableAmount(spt.address);
-      /*console.log(
-        "Amount of spt releasable:                           %o",
-        await web3.utils.fromWei(releasableSpt, "ether")
-      );*/
-
-      const vestedSpt = await beneficiaryLock.vestedAmount(spt.address);
-      /*console.log(
-        "Amount of spt already vested:                       %o",
-        await web3.utils.fromWei(vestedSpt, "ether")
-      );*/
-
       const { receipt } = await beneficiaryLock.release(spt.address);
       const block = await ethGetBlock(receipt.blockNumber);
       const releaseTime = block.timestamp;
 
-      const amountInLock = await spt.balanceOf(beneficiaryLock.address);
-      /*console.log(
+      /*const amountInLock = await spt.balanceOf(beneficiaryLock.address);
+      console.log(
         "Amount of spt locked:                               %o",
         await web3.utils.fromWei(amountInLock, "ether")
       );*/
 
       const releasedAmount = amountInLockBefore
-        .mul(new BN(releaseTime - _start))
+        .mul(new BN(releaseTime - beneficiaryLockStartTime.toNumber()))
         .div(new BN(_duration));
 
       /*console.log(
         "Amount of spt supposed to be released:              %o",
         await web3.utils.fromWei(releasedAmount, "ether")
-      );*/
+      );
       const investorBalanceAfter = await spt.balanceOf(investor01);
-      /*console.log(
+      console.log(
         "Amount of spt on investor's account after release:  %o",
         await web3.utils.fromWei(investorBalanceAfter, "ether")
       );*/
@@ -234,15 +223,20 @@ contract("TimelockedCrowdsale", accounts => {
     it("should linearly release tokens during vesting period", async () => {
       const vestingPeriod = _duration - _cliffDuration;
       const checkpoints = 4;
-      const amountInLockBefore = await spt.balanceOf(beneficiaryLock.address);
+      const amountInLockBefore = new BN(
+        await spt.balanceOf(beneficiaryLock.address)
+      );
 
       for (let i = 1; i <= checkpoints; i++) {
-        const now = _start + _cliffDuration + i * (vestingPeriod / checkpoints);
+        const now =
+          beneficiaryLockStartTime.toNumber() +
+          _cliffDuration +
+          i * (vestingPeriod / checkpoints);
         await time.increaseTo(now);
 
         await beneficiaryLock.release(spt.address);
         const expectedVesting = amountInLockBefore
-          .mul(new BN(now - _start))
+          .mul(new BN(now - beneficiaryLockStartTime.toNumber()))
           .div(new BN(_duration));
 
         expect(await spt.balanceOf(investor01)).to.eq.BN(expectedVesting);
@@ -253,7 +247,7 @@ contract("TimelockedCrowdsale", accounts => {
     });
 
     it("should have released all after end", async () => {
-      await time.increaseTo(_start + _duration);
+      await time.increaseTo(beneficiaryLockStartTime.toNumber() + _duration);
       await beneficiaryLock.release(spt.address);
 
       const sptBalanceInvestor01 = await spt.balanceOf(investor01);
@@ -274,47 +268,8 @@ contract("TimelockedCrowdsale", accounts => {
       const { logs } = await beneficiaryLock.revoke(spt.address, {
         from: deployer
       });
-      expect(logs[0].event).to.be.eql("Revoked");
+      expect(logs[0].event).to.be.eql("TokenVestingRevoked");
       expect(await beneficiaryLock.revoked(spt.address)).to.be.true;
-    });
-
-    it("should return the non-vested tokens when revoked by owner", async () => {
-      await time.increaseTo(_start + _cliffDuration + time.duration.weeks(2));
-
-      const ownerBalanceBeforeRevoke = new BigNumber(
-        await spt.balanceOf(deployer)
-      );
-
-      const vested = new BigNumber(
-        await beneficiaryLock.vestedAmount(spt.address)
-      );
-
-      await beneficiaryLock.revoke(spt.address, { from: deployer });
-
-      const ownerBalanceAfterRevoke = new BigNumber(
-        await spt.balanceOf(deployer)
-      );
-      const expectedTokenAmountWei = web3.utils.toWei(
-        expectedTokenAmount.toString(),
-        "ether"
-      );
-      const expectedTokenAmountBN = new BigNumber(expectedTokenAmountWei);
-
-      expect(ownerBalanceAfterRevoke).to.be.eql(
-        expectedTokenAmountBN.minus(vested).plus(ownerBalanceBeforeRevoke)
-      );
-    });
-
-    it("should keep the vested tokens when revoked by owner", async () => {
-      await time.increaseTo(_start + _cliffDuration + time.duration.weeks(2));
-
-      const vestedPre = await beneficiaryLock.vestedAmount(spt.address);
-
-      await beneficiaryLock.revoke(spt.address, { from: deployer });
-
-      const vestedPost = await beneficiaryLock.vestedAmount(spt.address);
-
-      expect(vestedPre).to.eq.BN(vestedPost);
     });
 
     it("should fail to be revoked a second time", async () => {
@@ -379,10 +334,8 @@ contract("TimelockedCrowdsale", accounts => {
       _revocability = [_revocable, _revocable, _revocable];
       _fundsAddress = [team, partners];
       _fundsLocksTime = [
-        _teamLockStart,
         _teamLockCliff,
         _teamLockDuration,
-        _partnersLockStart,
         _partnersLockCliff,
         _partnersLockDuration
       ];

@@ -75,7 +75,7 @@ contract("TimelockedCrowdsale", accounts => {
     _saleAttributes = [_rate, _cap];
     _capitalVaults = [_wallet, _tokenVault];
     _saleTime = [_openingTime, _closingTime];
-    _beneficiaryLocksTime = [_start, _cliffDuration, _duration];
+    _beneficiaryLocksTime = [_cliffDuration, _duration];
     _revocability = [_revocable, _revocable, _revocable];
     _fundsAddress = [team, partners];
     _fundsLocksTime = [
@@ -138,18 +138,13 @@ contract("TimelockedCrowdsale", accounts => {
       expect(closingTime).to.eq.BN(_closingTime);
     });
 
-    it("crowdsale has the correct vesting start time", async () => {
-      const startTime = await sender.beneficiaryLocksTime(0);
-      expect(startTime).to.eq.BN(_start);
-    });
-
     it("crowdsale has the correct vesting cliff duration", async () => {
-      const cliffDuration = await sender.beneficiaryLocksTime(1);
+      const cliffDuration = await sender.beneficiaryLocksTime(0);
       expect(cliffDuration).to.eq.BN(_cliffDuration);
     });
 
     it("crowdsale has the correct vesting duration", async () => {
-      const duration = await sender.beneficiaryLocksTime(2);
+      const duration = await sender.beneficiaryLocksTime(1);
       expect(duration).to.eq.BN(_duration);
     });
 
@@ -160,12 +155,6 @@ contract("TimelockedCrowdsale", accounts => {
   });
 
   describe("accepting payments", () => {
-    /*
-    it("should accept payments", async () => {
-      await sender.sendTransaction({ value: investAmount, from: investor01 })
-        .should.be.fulfilled;
-    });*/
-
     it("should reject token purchase before start time", async () => {
       await sender.buyTokens(investor01, {
         value: investAmount,
