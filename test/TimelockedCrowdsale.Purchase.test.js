@@ -379,6 +379,8 @@ contract("TimelockedCrowdsale", accounts => {
       teamPartnerLocks = await sender.getTokenLocksTeamAndPartners();
       teamLock = await TokenVesting.at(teamPartnerLocks[0]);
       partnerLock = await TokenVesting.at(teamPartnerLocks[1]);
+      teamLockStartTime = await sender.getTeamPartnerLockStartTime(team);
+      partnerLockStartTime = await sender.getTeamPartnerLockStartTime(partners);
     });
 
     describe("token distribution locks", () => {
@@ -401,8 +403,38 @@ contract("TimelockedCrowdsale", accounts => {
         expect(await partnerLock.owner()).to.be.eql(sender.address);
       });
 
+      it("delivers designated tokens to team's address after release from token", async () => {
+        await time.increaseTo(
+          teamLockStartTime.toNumber() + _fundsLocksTime[1]
+        );
+        await teamLock.release(spt.address);
+
+        const sptBalanceTeam = await spt.balanceOf(team);
+        const sptReleasedByLock = await teamLock.released(spt.address);
+        const teamTokenAmount = await sender.tokenTeamAmount();
+
+        expect(sptBalanceTeam.toNumber()).to.be.eql(teamTokenAmount.toNumber());
+        expect(sptReleasedByLock.toNumber()).to.be.eql(
+          teamTokenAmount.toNumber()
+        );
+      });
+
       it("delivers designated tokens to partner's address after release from token", async () => {
-        console.log();
+        await time.increaseTo(
+          partnerLockStartTime.toNumber() + _fundsLocksTime[3]
+        );
+        await partnerLock.release(spt.address);
+
+        const sptBalancePartner = await spt.balanceOf(partners);
+        const sptReleasedByLock = await partnerLock.released(spt.address);
+        const partnerTokenAmount = await sender.tokenPartnersAmount();
+
+        expect(sptBalancePartner.toNumber()).to.be.eql(
+          partnerTokenAmount.toNumber()
+        );
+        expect(sptReleasedByLock.toNumber()).to.be.eql(
+          partnerTokenAmount.toNumber()
+        );
       });
     });
   });
