@@ -20,7 +20,7 @@
     "ganache-cli": "^6.1.8",
     "ganache-core": "^2.2.1",
     "mocha": "^5.2.0",
-    "openzeppelin-solidity": "^2.0.0-rc.3",
+    "openzeppelin-solidity": "^2.0.0",
     "pify": "^4.0.1",
     "truffle-contract": "^3.0.6",
     "truffle-hdwallet-provider": "0.0.5",
