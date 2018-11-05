@@ -162,7 +162,7 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
     );
     super._deliverTokens(teamFundLock, tokenTeamAmount);
     fundsLocksAddress.push(teamFundLock);
-    fundsLocksStartTimes[teamFundLock] = fundsLocksStart;
+    fundsLocksStartTimes[fundsAddress[0]] = fundsLocksStart;
 
     TokenVesting partnersFundLock = new TokenVesting(
       fundsAddress[1],
@@ -173,8 +173,8 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
     );
     super._deliverTokens(partnersFundLock, tokenPartnersAmount);
     fundsLocksAddress.push(partnersFundLock);
-    fundsLocksStartTimes[partnersFundLock] = fundsLocksStart;
-    
+    fundsLocksStartTimes[fundsAddress[1]] = fundsLocksStart;
+
     super._finalization();
   }
 }
