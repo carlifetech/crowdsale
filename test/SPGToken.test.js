@@ -55,12 +55,12 @@ contract("SPGToken", accounts => {
       expect(this.creatorBalance.eq(this.totalSupply)).to.be.true;
     });
 
-    it("log has length 1", async () => {
-      expect(this.logs.length).to.eql(2);
+    it("log has length 3", async () => {
+      expect(this.logs.length).to.eql(3);
     });
 
     it("the transaction type is Transfer", async () => {
-      expect(this.logs[0].name).to.eql("Transfer");
+      expect(this.logs[1].name).to.eql("Transfer");
     });
 
     it("the transaction is initited from zero_address", async () => {
@@ -74,7 +74,9 @@ contract("SPGToken", accounts => {
     });
 
     it("all supply of tokens is transferred", async () => {
-      expect(this.totalSupply).to.eq.BN(this.logs[0].events[2].value);
+      expect(this.totalSupply).to.eq.BN(
+        await this.token.balanceOf(accounts[0])
+      );
     });
   });
 });
