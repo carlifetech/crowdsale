@@ -45,7 +45,6 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
 
   // events to be emitted
   event CreatedLock(TokenVesting newTokenLock);
-
   // _saleTime --> [_openingTime, _closingTime]
   // _saleAttributes --> [_rate, _cap]
   // _capitalVaults --> [_wallet, _tokenVault]
@@ -130,6 +129,7 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
     contributions[_beneficiary] = _newContribution;
   }
 
+
   // override the _processPurchase function to deliver tokens to the vests
   function _processPurchase(
     address beneficiary,
@@ -146,6 +146,7 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
       beneficiaryLocksTime[1], // duration
       revocability[0]
     );
+
     super._deliverTokens(newTokenLock, tokenAmount);
   }
 
@@ -173,7 +174,7 @@ contract TimelockedCrowdsale is Ownable, Pausable, AllowanceCrowdsale, CappedCro
     super._deliverTokens(partnersFundLock, tokenPartnersAmount);
     fundsLocksAddress.push(partnersFundLock);
     fundsLocksStartTimes[partnersFundLock] = fundsLocksStart;
-
+    
     super._finalization();
   }
 }
