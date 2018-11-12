@@ -320,11 +320,11 @@ contract("TimelockedCrowdsale", accounts => {
       _duration = time.duration.weeks(12);
       _revocable = true;
       _teamLockStart = (await time.latest()) + time.duration.minutes(1);
-      _teamLockCliff = _cliffDuration = time.duration.weeks(4);
-      _teamLockDuration = _duration = time.duration.weeks(12);
+      _teamLockCliff = time.duration.weeks(4);
+      _teamLockDuration = time.duration.weeks(12);
       _partnersLockStart = (await time.latest()) + time.duration.minutes(1);
-      _partnersLockCliff = _cliffDuration = time.duration.weeks(4);
-      _partnersLockDuration = _duration = time.duration.weeks(12);
+      _partnersLockCliff = time.duration.weeks(4);
+      _partnersLockDuration = time.duration.weeks(12);
 
       // refactored config
       _saleAttributes = [_rate, _cap];
